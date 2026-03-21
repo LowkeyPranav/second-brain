@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand: #26BAA4;
+  --color-brand-dark: #219B88;
+  --color-bg-light: #FDFCF8;
+  --color-bg-dark: #0F0F0F;
+  --color-ink-light: #2D2D2D;
+  --color-ink-dark: #E5E5E5;
+  --color-line-light: #E5E2D9;
+  --color-line-dark: #262626;
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased selection:bg-brand/20 selection:text-brand bg-bg-light text-ink-light dark:bg-bg-dark dark:text-ink-dark;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-md bg-white/70 dark:bg-black/70 border border-white/20 dark:border-white/10;
+  }
+  
+  .card-shadow {
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 8px -2px rgba(0, 0, 0, 0.03);
+  }
+  
+  .card-shadow-hover {
+    box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.05);
+  }
+
+  .glow-brand {
+    box-shadow: 0 0 20px -5px rgba(38, 186, 164, 0.3);
+  }
+  
+  .glow-brand-strong {
+    box-shadow: 0 0 30px -2px rgba(38, 186, 164, 0.4);
+  }
+
+  .glow-orange {
+    box-shadow: 0 0 20px -5px rgba(249, 115, 22, 0.3);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.3);
+  }
+
+  .text-glow-brand {
+    text-shadow: 0 0 12px rgba(38, 186, 164, 0.4);
+  }
+
+  .text-glow-white {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  }
+
+  .glow-border-brand {
+    @apply border-brand/40 shadow-[0_0_15px_-3px_rgba(38,186,164,0.3)];
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-line-light dark:bg-line-dark rounded-full hover:bg-brand/50 transition-colors;
+}
+
+/* KaTeX style overrides */
+.katex { 
+  color: inherit; 
+  font-size: 1.1em;
+}
+.katex-display { 
+  margin: 1.5em 0; 
+  padding: 1.5rem; 
+  @apply bg-white dark:bg-black/40 rounded-2xl border border-line-light dark:border-line-dark overflow-x-auto;
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Second Brain",
+  "description": "An AI-powered knowledge system for students to upload, summarize, and query their notes with zero chaos.",
+  "requestFramePermissions": []
+}
