@@ -34,7 +34,7 @@ const callGeminiWithRetry = async (params: GenerateContentParameters, maxRetries
 
 export const summarizeNote = async (note: Note): Promise<SummaryResponse> => {
   const response = await callGeminiWithRetry({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Please summarize the following educational content. 
     IMPORTANT: Use LaTeX for any mathematical equations or chemical formulas (e.g., use $...$ for inline and $$...$$ for blocks).
     
@@ -79,7 +79,7 @@ export const generateQuiz = async (notes: Note[], count: number, difficulty: Qui
   };
 
   const response = await callGeminiWithRetry({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `You are a professional academic examiner. 
     TASK: Create a ${count}-question multiple choice quiz based on the provided notes. 
     STRICT REQUIREMENT: You MUST create EXACTLY ${count} questions.
@@ -152,7 +152,7 @@ export const analyzeProgress = async (notes: Note[], quizHistory: QuizResult[]):
   const historyContext = quizHistory.map(h => `Quiz Result: ${h.score}/${h.total} on ${new Date(h.timestamp).toLocaleDateString()}`).join('\n');
 
   const response = await callGeminiWithRetry({
-    model: "gemini-3-pro-preview",
+    model: "gemini-2.0-flash",
     contents: `Perform a HIGH-IMPACT, ACTIONABLE, and PREDICTIVE study progress analysis.
     
     1. Identify "Weakness Patterns": Are they making careless mistakes (e.g., arithmetic errors) or do they have fundamental concept gaps?
@@ -296,7 +296,7 @@ export const generateLessonDrill = async (topic: string, subject: string, notes:
   const context = notes.map(n => n.content).join('\n\n');
 
   const response = await callGeminiWithRetry({
-    model: "gemini-3-pro-preview",
+    model: "gemini-2.0-flash",
     contents: `Create an EXAM-FOCUSED interactive lesson drill for "${topic}" (${subject}).
     
     MANDATORY: 
@@ -345,7 +345,7 @@ export const answerQuestion = async (
   ${context}`;
 
   const response = await callGeminiWithRetry({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: [
       ...chatHistory.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
