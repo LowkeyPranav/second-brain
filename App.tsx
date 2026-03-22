@@ -142,8 +142,8 @@ const App: React.FC = () => {
             <section className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                  <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>My Study Materials</h2>
-                  <p className={`text-xs sm:text-sm mt-1 sm:mt-2 font-semibold ${isDark ? 'text-[#CCC]' : 'text-[#444]'}`}>Organize your notes and get ready for exams.</p>
+                  <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-black'}`}>My Library</h2>
+                  <p className={`text-xs sm:text-sm mt-1 sm:mt-2 font-semibold ${isDark ? 'text-[#CCC]' : 'text-[#444]'}`}>Drop your notes. We'll handle the rest.</p>
                 </div>
                 <div className="flex items-center space-x-2 text-[10px] text-[#26BAA4] font-bold uppercase tracking-widest border border-[#26BAA4]/20 px-3 py-1.5 rounded-full bg-white dark:bg-[#1A1A1A] shadow-sm self-start sm:self-auto whitespace-nowrap">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#26BAA4] animate-pulse"></span>
@@ -156,7 +156,7 @@ const App: React.FC = () => {
             <section className="flex-1 overflow-y-auto space-y-6 pr-2">
               {notes.length === 0 ? (
                 <div className="border border-[#E5E2D9] dark:border-[#262626] rounded-xl p-12 bg-white dark:bg-[#1A1A1A] text-center shadow-sm">
-                  <p className="text-[#AAA] text-sm italic font-medium">Your library is empty. Upload materials to start learning.</p>
+                  <p className="text-[#AAA] text-sm italic font-medium">Your library is empty...</p>
                 </div>
               ) : (
                 notes.map(note => (
@@ -244,7 +244,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="py-10 border-t border-[#E5E2D9] dark:border-[#262626] text-center bg-white dark:bg-[#1A1A1A] transition-colors duration-300">
-        <p className="text-[#26BAA4] text-[10px] font-black uppercase tracking-[0.3em]">Learn Smarter</p>
+        <p className="text-[#26BAA4] text-[10px] font-black uppercase tracking-[0.3em]">Think Left. Think Smart.r</p>
         <p className="text-[#666] dark:text-[#AAA] text-[9px] mt-2 font-medium opacity-60">© Left Brain Study App</p>
       </footer>
     </div>
