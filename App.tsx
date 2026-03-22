@@ -245,7 +245,7 @@ const App: React.FC = () => {
 
       <footer className="py-10 border-t border-[#E5E2D9] dark:border-[#262626] text-center bg-white dark:bg-[#1A1A1A] transition-colors duration-300">
         <p className="text-[#26BAA4] text-[10px] font-black uppercase tracking-[0.3em]">Learn Smarter</p>
-        <p className="text-[#666] dark:text-[#AAA] text-[9px] mt-2 font-medium opacity-60">© Second Brain Study App</p>
+        <p className="text-[#666] dark:text-[#AAA] text-[9px] mt-2 font-medium opacity-60">© Left Brain Study App</p>
       </footer>
     </div>
   );
