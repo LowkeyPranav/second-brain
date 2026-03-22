@@ -28,7 +28,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onViewChange, isDark, onTo
         </div>
         <div className="cursor-pointer hidden sm:block" onClick={() => onViewChange('repository')}>
           <h1 className="text-base sm:text-xl font-bold text-[#2D2D2D] dark:text-[#E5E5E5] tracking-tight leading-tight">Left Brain</h1>
-          <p className="text-[10px] sm:text-xs text-[#26BAA4] font-medium hidden md:block">Study less. Know more.</p>
+          <p className="text-[10px] sm:text-xs text-[#26BAA4] font-medium hidden md:block"> Think Left. Think Smart.</p>
         </div>
       </div>
       
