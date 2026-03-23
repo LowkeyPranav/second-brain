@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Note, QuizQuestion, QuizDifficulty, QuizResult } from '../types';
 import { generateQuiz } from '../services/geminiService';
@@ -6,6 +5,25 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import confetti from 'canvas-confetti';
+
+const DAILY_QUIZ_LIMIT = 6;
+
+function getTodayKey() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getQuizCount(): number {
+  const data = localStorage.getItem('lb_quiz_count');
+  if (!data) return 0;
+  const parsed = JSON.parse(data);
+  if (parsed.date !== getTodayKey()) return 0;
+  return parsed.count;
+}
+
+function incrementQuizCount() {
+  const count = getQuizCount();
+  localStorage.setItem('lb_quiz_count', JSON.stringify({ date: getTodayKey(), count: count + 1 }));
+}
 
 interface QuizViewProps {
   notes: Note[];
@@ -28,8 +46,10 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
   const [difficulty, setDifficulty] = useState<QuizDifficulty>('Medium');
   const [questionCount, setQuestionCount] = useState(5);
   const [autoShowExplanation, setAutoShowExplanation] = useState(true);
+  const [quizCount, setQuizCount] = useState(getQuizCount());
+
+  const limitReached = quizCount >= DAILY_QUIZ_LIMIT;
   
-  // Timer State
   const [timeLeft, setTimeLeft] = useState(30);
   const [totalTimeTaken, setTotalTimeTaken] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -40,7 +60,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
         setTotalTimeTaken(prev => prev + 1);
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            handleSelect(-1); // Time's up!
+            handleSelect(-1);
             return 0;
           }
           return prev - 1;
@@ -53,6 +73,9 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
   }, [loading, isConfiguring, quizComplete, showExplanation, showReflection, currentIndex]);
 
   const startQuiz = async () => {
+    if (limitReached) return;
+    incrementQuizCount();
+    setQuizCount(getQuizCount());
     setIsConfiguring(false);
     setLoading(true);
     const qs = await generateQuiz(notes, questionCount, difficulty);
@@ -81,11 +104,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
     onComplete(result);
     setQuizComplete(true);
     if (score / questions.length > 0.7) {
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     }
   };
 
@@ -137,6 +156,9 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[#2D2D2D] dark:text-[#E5E5E5] tracking-tight">Quiz Setup</h2>
           <p className="text-[#26BAA4] text-[10px] font-bold uppercase tracking-widest mt-1">Practice & Mastery</p>
+          <div className={`mt-3 text-[10px] font-bold uppercase tracking-widest ${limitReached ? 'text-red-400' : 'text-[#26BAA4]'}`}>
+            {limitReached ? 'Daily limit reached — resets at midnight' : `${DAILY_QUIZ_LIMIT - quizCount} / ${DAILY_QUIZ_LIMIT} quizzes left today`}
+          </div>
         </div>
 
         <div className="space-y-10 sm:space-y-14">
@@ -150,11 +172,12 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
                 <button
                   key={count}
                   onClick={() => setQuestionCount(count)}
+                  disabled={limitReached}
                   className={`py-2.5 rounded-lg border font-bold text-xs sm:text-sm transition-all ${
                     questionCount === count 
                       ? 'bg-[#26BAA4] text-white border-[#26BAA4] shadow-sm' 
                       : 'bg-white dark:bg-[#222] border-[#E5E2D9] dark:border-[#333] text-[#666] dark:text-[#AAA] hover:border-[#26BAA4]/50'
-                  }`}
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                   {count}
                 </button>
@@ -172,11 +195,12 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
                 <button
                   key={diff}
                   onClick={() => setDifficulty(diff)}
+                  disabled={limitReached}
                   className={`py-3 rounded-lg border text-center transition-all ${
                     difficulty === diff 
                       ? 'bg-[#2D2D2D] dark:bg-[#E5E5E5] text-white dark:text-[#0F0F0F] border-[#2D2D2D] dark:border-white shadow-sm' 
                       : 'bg-white dark:bg-[#222] border-[#E5E2D9] dark:border-[#333] text-[#666] dark:text-[#AAA] hover:border-[#2D2D2D]/50 dark:hover:border-white/50'
-                  }`}
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                   <div className="font-bold text-[10px] uppercase tracking-wider">{diff}</div>
                 </button>
@@ -197,12 +221,19 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
             </button>
           </div>
 
-          <button
-            onClick={startQuiz}
-            className="w-full bg-[#26BAA4] text-white py-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-widest active:scale-[0.98]"
-          >
-            Start Quiz
-          </button>
+          {limitReached ? (
+            <div className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl py-4 text-center">
+              <p className="text-xs font-bold text-red-500">Daily quiz limit reached (6 quizzes)</p>
+              <p className="text-[10px] text-red-400 mt-1">Resets at midnight. Upgrade for unlimited access.</p>
+            </div>
+          ) : (
+            <button
+              onClick={startQuiz}
+              className="w-full bg-[#26BAA4] text-white py-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-widest active:scale-[0.98]"
+            >
+              Start Quiz
+            </button>
+          )}
         </div>
       </div>
     );
@@ -211,8 +242,6 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
   if (quizComplete) {
     const carelessErrors = errors?.filter(e => e.type === 'careless').length || 0;
     const conceptErrors = errors?.filter(e => e.type === 'concept').length || 0;
-    
-    // Extract unique concept tags for weak/strong spots
     const weakSpots = Array.from(new Set(errors?.map(e => e.conceptTag) || []));
     const correctIndices = questions.map((_, i) => i).filter(i => !errors?.some(e => e.questionIndex === i));
     const strongSpots = Array.from(new Set(correctIndices.map(i => questions[i].conceptTag)));
@@ -276,7 +305,8 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button 
             onClick={startQuiz}
-            className="bg-[#26BAA4] text-white px-10 py-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-widest"
+            disabled={getQuizCount() >= DAILY_QUIZ_LIMIT}
+            className="bg-[#26BAA4] text-white px-10 py-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Try Again
           </button>
@@ -309,20 +339,13 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
   const handleSelect = (idx: number) => {
     if (showExplanation || showReflection) return;
     if (timerRef.current) clearInterval(timerRef.current);
-    
     setSelectedOption(idx);
     const isCorrect = idx === currentQ.correctAnswer;
-    
     if (isCorrect) {
       setScore(score + 1);
       setStreak(prev => prev + 1);
       if ((streak + 1) % 5 === 0) {
-        confetti({
-          particleCount: 40,
-          spread: 50,
-          origin: { y: 0.8 },
-          colors: ['#26BAA4', '#FFD700']
-        });
+        confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 }, colors: ['#26BAA4', '#FFD700'] });
       }
       setShowExplanation(true);
       if (autoShowExplanation) setManualExplanationVisible(true);
@@ -333,19 +356,13 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
   };
 
   const handleReflection = (type: 'concept' | 'careless') => {
-    setErrors(prev => [...(prev || []), { 
-      questionIndex: currentIndex, 
-      type, 
-      conceptTag: currentQ.conceptTag 
-    }]);
+    setErrors(prev => [...(prev || []), { questionIndex: currentIndex, type, conceptTag: currentQ.conceptTag }]);
     setShowReflection(false);
     setShowExplanation(true);
     if (autoShowExplanation) setManualExplanationVisible(true);
   };
 
-  const toggleExplanation = () => {
-    setManualExplanationVisible(!manualExplanationVisible);
-  };
+  const toggleExplanation = () => setManualExplanationVisible(!manualExplanationVisible);
 
   return (
     <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E2D9] dark:border-[#262626] rounded-2xl p-6 sm:p-10 shadow-sm animate-in slide-in-from-right-4 duration-500 transition-colors max-w-4xl mx-auto glow-border-brand">
@@ -363,16 +380,13 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
         <div className="flex flex-col items-start sm:items-end w-full sm:w-auto">
           <div className="flex items-center space-x-2 mb-2">
             {streak >= 3 && (
-              <div className="bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm glow-orange">
+              <div className="bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                 🔥 {streak} STREAK
               </div>
             )}
           </div>
           <div className="w-full sm:w-48 h-1.5 bg-[#FDFCF8] dark:bg-[#111] rounded-full overflow-hidden border border-[#E5E2D9] dark:border-[#262626] glow-brand">
-            <div 
-              className="h-full bg-[#26BAA4] transition-all duration-700 ease-out shadow-[0_0_10px_#26BAA4]" 
-              style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-            ></div>
+            <div className="h-full bg-[#26BAA4] transition-all duration-700 ease-out shadow-[0_0_10px_#26BAA4]" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}></div>
           </div>
         </div>
       </div>
@@ -391,18 +405,8 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
           <h4 className="text-lg font-bold text-[#2D2D2D] dark:text-[#E5E5E5] mb-1 uppercase tracking-tight">Self-Reflection</h4>
           <p className="text-xs text-[#666] dark:text-[#AAA] mb-6 font-medium">Why did you get this wrong?</p>
           <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={() => handleReflection('careless')}
-              className="bg-orange-500 text-white p-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-wider"
-            >
-              Careless
-            </button>
-            <button 
-              onClick={() => handleReflection('concept')}
-              className="bg-red-600 text-white p-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-wider"
-            >
-              Concept Gap
-            </button>
+            <button onClick={() => handleReflection('careless')} className="bg-orange-500 text-white p-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-wider">Careless</button>
+            <button onClick={() => handleReflection('concept')} className="bg-red-600 text-white p-4 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-sm uppercase tracking-wider">Concept Gap</button>
           </div>
         </div>
       )}
@@ -417,14 +421,8 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
           } else if (selectedOption === i) {
             styles = "bg-[#26BAA4]/5 border-[#26BAA4] text-[#26BAA4] font-bold";
           }
-
           return (
-            <button
-              key={i}
-              onClick={() => handleSelect(i)}
-              disabled={showExplanation}
-              className={`w-full text-left px-5 py-4 rounded-xl border transition-all flex items-center justify-between group ${styles}`}
-            >
+            <button key={i} onClick={() => handleSelect(i)} disabled={showExplanation} className={`w-full text-left px-5 py-4 rounded-xl border transition-all flex items-center justify-between group ${styles}`}>
               <div className="prose prose-stone dark:prose-invert text-sm sm:text-base font-medium overflow-hidden leading-relaxed">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{opt}</ReactMarkdown>
               </div>
@@ -440,10 +438,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
 
       {showExplanation && (
         <div className="flex justify-center mb-6">
-          <button 
-            onClick={toggleExplanation}
-            className="flex items-center space-x-2 text-[9px] font-bold uppercase tracking-widest text-[#26BAA4] bg-[#26BAA4]/5 px-3 py-1.5 rounded-full border border-[#26BAA4]/10 hover:bg-[#26BAA4]/10 transition-all"
-          >
+          <button onClick={toggleExplanation} className="flex items-center space-x-2 text-[9px] font-bold uppercase tracking-widest text-[#26BAA4] bg-[#26BAA4]/5 px-3 py-1.5 rounded-full border border-[#26BAA4]/10 hover:bg-[#26BAA4]/10 transition-all">
             <span>{manualExplanationVisible ? 'Hide Explanation' : 'Show Explanation'}</span>
             <svg className={`w-3 h-3 transition-transform ${manualExplanationVisible ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7"/></svg>
           </button>
@@ -454,7 +449,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
         <div className="bg-[#26BAA4]/5 border border-[#26BAA4]/10 rounded-xl p-6 sm:p-8 mb-8 animate-in fade-in slide-in-from-top-2 duration-500">
           <div className="flex items-center space-x-3 mb-4">
             <div className="p-2 bg-[#26BAA4] text-white rounded-lg">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm 1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
             </div>
             <h4 className="text-[10px] font-bold text-[#26BAA4] uppercase tracking-widest">Explanation</h4>
           </div>
@@ -465,10 +460,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
       )}
 
       {showExplanation && (
-        <button 
-          onClick={handleNext}
-          className="w-full bg-[#2D2D2D] dark:bg-[#E5E5E5] text-white dark:text-[#0F0F0F] py-4 sm:py-5 rounded-xl font-bold text-base sm:text-lg hover:opacity-90 transition-all shadow-md active:scale-[0.98] uppercase tracking-widest mt-2"
-        >
+        <button onClick={handleNext} className="w-full bg-[#2D2D2D] dark:bg-[#E5E5E5] text-white dark:text-[#0F0F0F] py-4 sm:py-5 rounded-xl font-bold text-base sm:text-lg hover:opacity-90 transition-all shadow-md active:scale-[0.98] uppercase tracking-widest mt-2">
           {currentIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
         </button>
       )}
