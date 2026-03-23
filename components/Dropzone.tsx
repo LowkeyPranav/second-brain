@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 
-const DAILY_UPLOAD_LIMIT = 3;
+const DAILY_UPLOAD_LIMIT = 8;
 
 function getTodayKey() {
   return new Date().toISOString().split('T')[0];
@@ -113,7 +113,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, isLoading }) => {
           {isLoading ? 'Reading your notes...' : limitReached ? 'Daily limit reached' : 'Add Your Notes'}
         </h3>
         <p className="text-[#666] dark:text-[#AAA] text-sm max-w-xs font-medium">
-          {limitReached ? 'You can upload 3 files per day. Resets at midnight.' : 'Drag and drop your PDFs or text files here to begin.'}
+          {limitReached ? 'You can upload 8 files per day. Resets at midnight.' : 'Drag and drop your PDFs or text files here to begin.'}
         </p>
       </div>
     </div>
