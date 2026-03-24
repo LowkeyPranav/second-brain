@@ -1,7 +1,11 @@
 import { Note, SummaryResponse, QuizQuestion, ProgressAnalysis, LessonDrill, QuizDifficulty, QuizResult } from "../types";
 
 function cleanJSON(raw: string): string {
-  return raw.replace(/```json|```/g, "").trim();
+  return raw
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .replace(/\n/g, " ")
+    .trim();
 }
 
 // 🔥 SINGLE SOURCE OF TRUTH
@@ -93,7 +97,26 @@ ${context}`;
 
   try {
     const result = await callAI(system, user);
-    return Array.isArray(result) ? result.slice(0, count) : [];
+    if (!Array.isArray(result)) return [];
+
+return result.slice(0, count).map((q: any) => {
+  const correctIndex =
+    typeof q.answer === "string"
+      ? ["A", "B", "C", "D"].indexOf(q.answer)
+      : q.correctAnswer ?? 0;
+
+  return {
+    question: q.question,
+    options: Array.isArray(q.options)
+      ? q.options.map((opt: any) =>
+          typeof opt === "string" ? opt : opt.text
+        )
+      : [],
+    correctAnswer: correctIndex >= 0 ? correctIndex : 0,
+    explanation: q.explanation || "",
+    conceptTag: q.conceptTag || "General",
+  };
+});
   } catch {
     return [];
   }
@@ -142,7 +165,31 @@ export const generateLessonDrill = async (
   const system = `Teach topic. JSON only.`;
   const user = `${topic} ${subject}`;
 
-  return await callAI(system, user);
+  try {
+  const data = await callAI(system, user);
+
+  return {
+    conceptExplanation: data.conceptExplanation || "",
+    exampleProblem: data.exampleProblem || "",
+    exampleSolution: data.exampleSolution || "",
+    practiceQuestion: data.practiceQuestion || "",
+    practiceAnswer: data.practiceAnswer || "",
+    practiceExplanation: data.practiceExplanation || "",
+    examTips: data.examTips || [],
+    interactiveCheck: data.interactiveCheck || "",
+  };
+} catch {
+  return {
+    conceptExplanation: "Failed to load lesson.",
+    exampleProblem: "",
+    exampleSolution: "",
+    practiceQuestion: "",
+    practiceAnswer: "",
+    practiceExplanation: "",
+    examTips: [],
+    interactiveCheck: "",
+  };
+}
 };
 
 export const answerQuestion = async (
