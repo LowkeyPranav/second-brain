@@ -50,6 +50,7 @@ ${note.content.slice(0, 3000)}`;
 
   try {
     const raw = await callAI(system, user);
+    console.log("SUMMARY RAW:", raw);
     return JSON.parse(cleanJSON(raw));
   } catch (e) {
     return { summary: "Failed to generate summary.", keyTakeaways: [] };
@@ -90,7 +91,14 @@ ${context}`;
     let parsed;
 
 try {
-  parsed = JSON.parse(cleanJSON(raw));
+   const cleaned = cleanJSON(raw);
+
+if (!cleaned || cleaned.startsWith("Error")) {
+  console.error("INVALID AI RESPONSE:", raw);
+  return [];
+}
+
+parsed = JSON.parse(cleaned);
 } catch (e) {
   console.error("JSON PARSE FAILED:", raw);
   return [];
