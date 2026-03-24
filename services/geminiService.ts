@@ -25,8 +25,21 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
 }
 
 function cleanJSON(raw: string): string {
-  return raw.replace(/```json|```/g, '').trim();
+  try {
+    let cleaned = raw.replace(/```json|```/g, '').trim();
+
+    cleaned = cleaned
+      .replace(/\n/g, " ")
+      .replace(/\r/g, "")
+      .replace(/\t/g, " ")
+      .replace(/\\(?!["\\/bfnrtu])/g, "");
+
+    return cleaned;
+  } catch {
+    return raw;
+  }
 }
+
 
 export const summarizeNote = async (note: Note): Promise<SummaryResponse> => {
   const system = `You are a study assistant. Respond with valid JSON only — no markdown, no explanation.`;
@@ -62,7 +75,8 @@ export const generateQuiz = async (notes: Note[], count: number, difficulty: Qui
   const user = `Create EXACTLY ${count} multiple choice questions. Difficulty: ${difficulty} — ${difficultyPrompts[difficulty]}
 Use LaTeX for ALL mathematical symbols, variables, formulas (e.g. $x$, $\\frac{a}{b}$).
 
-Return ONLY a JSON array:
+Return ONLY VALID JSON (NO markdown, NO backticks, NO explanations, NO trailing commas).
+STRICT FORMAT:
 [
   {
     "question": "question text",
@@ -78,8 +92,26 @@ ${context}`;
 
   try {
     const raw = await callAI(system, user);
-    const result = JSON.parse(cleanJSON(raw));
-    return Array.isArray(result) ? result.slice(0, count) : [];
+    let parsed;
+
+try {
+  parsed = JSON.parse(cleanJSON(raw));
+} catch (e) {
+  console.error("JSON PARSE FAILED:", raw);
+  return [];
+}
+
+const quizArray = Array.isArray(parsed)
+  ? parsed
+  : (parsed && parsed.questions) || [];
+
+return quizArray
+  .filter(q =>
+    q &&
+    typeof q.question === "string" &&
+    Array.isArray(q.options)
+  )
+  .slice(0, count);
   } catch (e) {
     console.error("Quiz generation failed", e);
     return [];

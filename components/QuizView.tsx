@@ -79,7 +79,15 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
     setIsConfiguring(false);
     setLoading(true);
     const qs = await generateQuiz(notes, questionCount, difficulty);
-    setQuestions(qs);
+
+if (!qs || qs.length === 0) {
+  alert("Quiz generation failed. Try again.");
+  setIsConfiguring(true);
+  setLoading(false);
+  return;
+}
+
+setQuestions(qs);
     setCurrentIndex(0);
     setScore(0);
     setQuizComplete(false);
@@ -321,7 +329,14 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
     );
   }
 
-  const currentQ = questions[currentIndex];
+  const currentQ = questions[currentIndex] || null;
+  if (!currentQ) {
+  return (
+    <div className="text-white text-center p-10">
+      Loading question...
+    </div>
+  );
+}
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
@@ -393,7 +408,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
 
       <div className="mb-8 sm:mb-12 min-h-[60px]">
         <div className="text-lg sm:text-2xl font-bold text-[#2D2D2D] dark:text-[#E5E5E5] leading-snug prose prose-stone dark:prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{currentQ.question}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{currentQ.question || ""}</ReactMarkdown>
         </div>
         <div className="mt-3 inline-block bg-[#26BAA4]/5 text-[#26BAA4] text-[9px] font-bold px-2 py-0.5 rounded border border-[#26BAA4]/10 uppercase tracking-wider">
           {currentQ.conceptTag}
@@ -412,7 +427,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
       )}
 
       <div className="grid grid-cols-1 gap-3 mb-8">
-        {currentQ.options.map((opt, i) => {
+        {(currentQ.options || []).map((opt, i) => {
           let styles = "bg-[#FDFCF8] dark:bg-[#222] border-[#E5E2D9] dark:border-[#333] text-[#2D2D2D] dark:text-[#E5E5E5] hover:border-[#26BAA4] hover:bg-white dark:hover:bg-[#2A2A2A]";
           if (showExplanation) {
             if (i === currentQ.correctAnswer) styles = "bg-green-50 dark:bg-green-900/10 border-green-500 text-green-700 dark:text-green-400 font-bold";
@@ -454,7 +469,7 @@ const QuizView: React.FC<QuizViewProps> = ({ notes, onComplete }) => {
             <h4 className="text-[10px] font-bold text-[#26BAA4] uppercase tracking-widest">Explanation</h4>
           </div>
           <div className="text-sm sm:text-base text-[#444] dark:text-[#AAA] leading-relaxed italic prose prose-stone dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{currentQ.explanation}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{currentQ.explanation || ""}</ReactMarkdown>
           </div>
         </div>
       )}
