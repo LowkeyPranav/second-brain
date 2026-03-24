@@ -9,6 +9,9 @@ function cleanJSON(raw: string): string {
 }
 
 // 🔥 SINGLE SOURCE OF TRUTH
+
+
+
 async function callAI(systemPrompt: string, userPrompt: string): Promise<any> {
   const response = await fetch("/api/ai", {
     method: "POST",
@@ -23,6 +26,7 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<any> {
 
   if (!response.ok) {
     const err = await response.text();
+    console.error("API ERROR:", err);
     throw new Error(err);
   }
 
@@ -32,32 +36,25 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<any> {
 
   if (!content) {
     console.error("NO CONTENT:", data);
-    throw new Error("No AI content");
+    throw new Error("No content");
+  }
+
+  // 🔥 THIS IS THE IMPORTANT PART
+  if (typeof content === "object") {
+    return content;
   }
 
   try {
-    return JSON.parse(cleanJSON(content));
+    return JSON.parse(
+      content
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim()
+    );
   } catch (e) {
     console.error("FINAL PARSE FAILED:", content);
     throw new Error("Invalid JSON");
   }
-}
-
-// 🔥 TEXT VERSION (NO JSON)
-async function callAIText(systemPrompt: string, userPrompt: string): Promise<string> {
-  const response = await fetch("/api/ai", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      systemPrompt,
-      userPrompt,
-    }),
-  });
-
-  const data = await response.json();
-  return data?.choices?.[0]?.message?.content || "";
 }
 
 // ================= FUNCTIONS =================
@@ -130,31 +127,62 @@ export const analyzeProgress = async (
   const user = `Notes + history analysis`;
 
   try {
-    return await callAI(system, user);
-  } catch {
-    return {
-      overallMastery: 0,
-      studyTimeEstimate: "0h",
-      streakCount: 0,
-      level: 1,
-      experiencePoints: 0,
-      weaknessPatterns: [],
-      nextBestAction: {
-        title: "Start",
-        description: "Take quiz",
-        impact: "High Impact",
-        type: "quiz",
-        topic: "General",
-        subject: "General",
-      },
-      prediction: { currentLevel: 0, predictedScore: 0, potentialScore: 0, timeframeDays: 7 },
-      studentType: { label: "Beginner", analysis: "Start learning" },
-      actionPlan: [],
-      learningInsights: [],
-      rankedWeaknesses: [],
-      subjects: [],
-    };
-  }
+  const data = await callAI(system, user);
+
+  return {
+    overallMastery: data.overallMastery ?? 0,
+    studyTimeEstimate: data.studyTimeEstimate ?? "0h",
+    streakCount: data.streakCount ?? 0,
+    level: data.level ?? 1,
+    experiencePoints: data.experiencePoints ?? 0,
+    weaknessPatterns: data.weaknessPatterns ?? [],
+    nextBestAction: data.nextBestAction ?? {
+      title: "Start",
+      description: "Take a quiz",
+      impact: "High Impact",
+      type: "quiz",
+      topic: "General",
+      subject: "General"
+    },
+    prediction: data.prediction ?? {
+      currentLevel: 0,
+      predictedScore: 0,
+      potentialScore: 0,
+      timeframeDays: 7
+    },
+    studentType: data.studentType ?? {
+      label: "Beginner",
+      analysis: "Start learning"
+    },
+    actionPlan: data.actionPlan ?? [],
+    learningInsights: data.learningInsights ?? [],
+    rankedWeaknesses: data.rankedWeaknesses ?? [],
+    subjects: data.subjects ?? []
+  };
+} catch (e) {
+  return {
+    overallMastery: 0,
+    studyTimeEstimate: "0h",
+    streakCount: 0,
+    level: 1,
+    experiencePoints: 0,
+    weaknessPatterns: [],
+    nextBestAction: {
+      title: "Start",
+      description: "Take a quiz",
+      impact: "High Impact",
+      type: "quiz",
+      topic: "General",
+      subject: "General"
+    },
+    prediction: { currentLevel: 0, predictedScore: 0, potentialScore: 0, timeframeDays: 7 },
+    studentType: { label: "Beginner", analysis: "Start learning" },
+    actionPlan: [],
+    learningInsights: [],
+    rankedWeaknesses: [],
+    subjects: []
+  };
+}
 };
 
 export const generateLessonDrill = async (
@@ -200,7 +228,12 @@ export const answerQuestion = async (
   const system = `Helpful assistant.`;
   const user = question;
 
-  const text = await callAIText(system, user);
+  const result = await callAI(system, user);
+
+const text =
+  typeof result === "string"
+    ? result
+    : JSON.stringify(result);
 
   return { text, sources: [] };
 };
