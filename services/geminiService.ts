@@ -16,12 +16,34 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
 });
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Backend API error: ${err}`);
+  const err = await response.text();
+  console.error("Lesson API failed:", err);
+  return null;
   }
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || "Error generating response";
+  const text = await response.text();
+  
+  console.log("RAW LESSON RESPONSE:", text);
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    console.error("LESSON JSON PARSE FAILED:", text);
+    return null;
+  }
+   console.log("PARSED LESSON DATA:", data);
+   const content = data?.choices?.[0]?.message?.content;
+
+   if (!content) return null;
+
+   try {
+    return JSON.parse(cleanJSON(content));
+  } catch (e) {
+  console.error("FINAL LESSON PARSE FAILED:", content);
+  return null;
+}
 }
 
 function cleanJSON(raw: string): string {
