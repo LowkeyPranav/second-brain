@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 
-const DAILY_UPLOAD_LIMIT = 8;
+const DAILY_UPLOAD_LIMIT = 888;
 
 function getTodayKey() {
   return new Date().toISOString().split('T')[0];
