@@ -70,13 +70,38 @@ Return ONLY this JSON:
 Content:
 ${note.content.slice(0, 3000)}`;
 
+ try {
+  const raw = await callAI(system, user);
+  console.log("SUMMARY RAW:", raw);
+
+  const cleaned = cleanJSON(raw);
+
+  let parsed;
+
   try {
-    const raw = await callAI(system, user);
-    console.log("SUMMARY RAW:", raw);
-    return JSON.parse(cleanJSON(raw));
+    parsed = JSON.parse(cleaned);
   } catch (e) {
+    console.error("SUMMARY PARSE FAILED:", cleaned);
     return { summary: "Failed to generate summary.", keyTakeaways: [] };
   }
+
+  const content = parsed?.choices?.[0]?.message?.content;
+
+  if (!content) {
+    console.error("NO CONTENT IN SUMMARY:", parsed);
+    return { summary: "Failed to generate summary.", keyTakeaways: [] };
+  }
+
+  try {
+    return JSON.parse(cleanJSON(content));
+  } catch (e) {
+    console.error("FINAL SUMMARY PARSE FAILED:", content);
+    return { summary: "Failed to generate summary.", keyTakeaways: [] };
+  }
+
+} catch (e) {
+  return { summary: "Failed to generate summary.", keyTakeaways: [] };
+}
 };
 
 export const generateQuiz = async (notes: Note[], count: number, difficulty: QuizDifficulty): Promise<QuizQuestion[]> => {
