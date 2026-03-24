@@ -1,11 +1,11 @@
 import { Note, SummaryResponse, QuizQuestion, ProgressAnalysis, LessonDrill, QuizDifficulty, QuizResult } from "../types";
 
-const BASE_URL = 'https://api.siliconflow.cn/v1';
+const BASE_URL = 'https://api.siliconflow.com/v1';
 const MODEL = 'openai/gpt-oss-20b';
 
 async function callAI(systemPrompt: string, userPrompt: string): Promise<string> {
   const apiKey = import.meta.env.VITE_SILICONFLOW_API_KEY;
-  console.log('API KEY:', apiKey);
+  
   const response = await fetch(`${BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
