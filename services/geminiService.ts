@@ -86,37 +86,55 @@ export const generateQuiz = async (
   const context = notes.map(n => n.content).join("\n\n").slice(0, 5000);
 
   const system = `You are an examiner. JSON only.`;
-  const user = `Create ${count} MCQs.
+  const user = `
+Create ${count} MCQs.
 
 Return JSON ARRAY.
 
-${context}`;
-
+${context}
+`;
   try {
     const result = await callAI(system, user);
     if (!Array.isArray(result)) return [];
 
 return result.slice(0, count).map((q: any) => {
+  let options: string[] = [];
+
+  if (Array.isArray(q.options)) {
+    options = q.options.map((opt: any) => {
+      if (typeof opt === "string") return opt;
+      if (opt?.text) return opt.text;
+      return "";
+    }).filter(Boolean);
+  }
+
+  // fallback if AI gives A,B,C,D instead
+  if (options.length === 0 && q.A && q.B && q.C && q.D) {
+    options = [q.A, q.B, q.C, q.D];
+  }
+
+  // last fallback (prevents blank UI)
+  if (options.length === 0) {
+    console.error("BROKEN QUESTION:", q);
+    options = ["Option A", "Option B", "Option C", "Option D"];
+  }
+
   const correctIndex =
     typeof q.answer === "string"
       ? ["A", "B", "C", "D"].indexOf(q.answer)
       : q.correctAnswer ?? 0;
 
   return {
-    question: q.question,
-    options: Array.isArray(q.options)
-      ? q.options.map((opt: any) =>
-          typeof opt === "string" ? opt : opt.text
-        )
-      : [],
+    question: q.question || "Invalid question",
+    options,
     correctAnswer: correctIndex >= 0 ? correctIndex : 0,
     explanation: q.explanation || "",
     conceptTag: q.conceptTag || "General",
   };
 });
-  } catch {
+} catch {
     return [];
-  }
+  };
 };
 
 export const analyzeProgress = async (
