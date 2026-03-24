@@ -6,7 +6,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import confetti from 'canvas-confetti';
 
-const DAILY_QUIZ_LIMIT = 6;
+const DAILY_QUIZ_LIMIT = 66;
 
 function getTodayKey() {
   return new Date().toISOString().split('T')[0];
