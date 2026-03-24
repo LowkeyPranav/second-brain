@@ -4,7 +4,7 @@ const BASE_URL = 'https://api.siliconflow.cn/v1';
 const MODEL = 'openai/gpt-oss-20b';
 
 async function callAI(systemPrompt: string, userPrompt: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_SILICONFLOW_API_KEY;
+  const apiKey = process.env.SILICONFLOW_API_KEY;
 
   const response = await fetch(`${BASE_URL}/chat/completions`, {
     method: 'POST',
