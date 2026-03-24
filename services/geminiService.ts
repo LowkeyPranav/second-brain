@@ -1,35 +1,27 @@
 import { Note, SummaryResponse, QuizQuestion, ProgressAnalysis, LessonDrill, QuizDifficulty, QuizResult } from "../types";
 
-const BASE_URL = 'https://api.siliconflow.com/v1';
 const MODEL = 'openai/gpt-oss-20b';
 
 async function callAI(systemPrompt: string, userPrompt: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_SILICONFLOW_API_KEY;
   
-  const response = await fetch(`${BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      max_tokens: 4096,
-      temperature: 0.7,
-    }),
-  });
+  const response = await fetch("/api/ai", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    systemPrompt,
+    userPrompt,
+  }),
+});
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`SiliconFlow API error: ${err}`);
+    throw new Error(`Backend API error: ${err}`);
   }
 
   const data = await response.json();
-  return data.choices[0].message.content;
+  return data.choices?.[0]?.message?.content || "Error generating response";
 }
 
 function cleanJSON(raw: string): string {
@@ -46,7 +38,7 @@ Return ONLY this JSON:
 }
 
 Content:
-${note.content.slice(0, 4000)}`;
+${note.content.slice(0, 3000)}`;
 
   try {
     const raw = await callAI(system, user);
@@ -57,7 +49,7 @@ ${note.content.slice(0, 4000)}`;
 };
 
 export const generateQuiz = async (notes: Note[], count: number, difficulty: QuizDifficulty): Promise<QuizQuestion[]> => {
-  const context = notes.map(n => n.content).join('\n\n').slice(0, 8000);
+  const context = notes.map(n => n.content).join('\n\n').slice(0, 5000);
 
   const difficultyPrompts = {
     'Easy': 'focus on basic ideas and clear definitions.',
@@ -182,7 +174,7 @@ Return ONLY this JSON:
 };
 
 export const generateLessonDrill = async (topic: string, subject: string, notes: Note[]): Promise<LessonDrill> => {
-  const context = notes.map(n => n.content).join('\n\n').slice(0, 6000);
+  const context = notes.map(n => n.content).join('\n\n').slice(0, 4000);
 
   const system = `You are an expert tutor. Respond with valid JSON only — no markdown, no explanation.`;
   const user = `Create an exam-focused lesson drill for "${topic}" (${subject}).
@@ -216,14 +208,14 @@ export const answerQuestion = async (
   notes: Note[],
   chatHistory: { role: 'user' | 'assistant', content: string }[]
 ): Promise<{ text: string; sources: { uri: string; title: string }[] }> => {
-  const context = notes.map(n => `--- Document: ${n.name} ---\n${n.content.slice(0, 2000)}`).join('\n\n');
+  const context = notes.map(n => `--- Document: ${n.name} ---\n${n.content.slice(0, 1500)}`).join('\n\n');
 
   const recentHistory = chatHistory
     .slice(-6)
     .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n');
 
-  const system = `You are "Second Brain", a helpful study assistant. Always use LaTeX for math ($...$ inline, $$...$$ for blocks).
+  const system = `You are "Left Brain", a helpful study assistant. Always use LaTeX for math ($...$ inline, $$...$$ for blocks).
 
 CONTEXT FROM DOCUMENTS:
 ${context}`;
