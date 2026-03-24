@@ -81,7 +81,21 @@ const App: React.FC = () => {
       }
     }
 
-    setNotes(prev => [...prev, ...newNotes]);
+   if (!Array.isArray(newNotes) || newNotes.length === 0) {
+    console.error("Invalid newNotes:", newNotes);
+    setIsProcessing(false);
+    return;
+ }
+
+const validNotes = newNotes.filter(n => n && n.id);
+
+if (validNotes.length === 0) {
+  console.error("No valid notes after filtering");
+  setIsProcessing(false);
+  return;
+}
+
+setNotes(prev => [...prev, ...validNotes]);
     setIsProcessing(false);
   }, []);
 
