@@ -26,15 +26,10 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
 
 function cleanJSON(raw: string): string {
   try {
-    let cleaned = raw.replace(/```json|```/g, '').trim();
-
-    cleaned = cleaned
-      .replace(/\n/g, " ")
-      .replace(/\r/g, "")
-      .replace(/\t/g, " ")
-      .replace(/\\(?!["\\/bfnrtu])/g, "");
-
-    return cleaned;
+    return raw
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
   } catch {
     return raw;
   }
